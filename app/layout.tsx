@@ -28,6 +28,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
+        <script dangerouslySetInnerHTML={{ __html: `
+          tailwind = { config: { theme: { extend: { colors: { background: "#ffffff", foreground: "#0f172a", primary: "#2563eb", accent: "#16a34a", muted: "#f1f5f9", "muted-foreground": "#64748b" } } } } }
+        ` }} />
+        <script src="https://cdn.tailwindcss.com" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
