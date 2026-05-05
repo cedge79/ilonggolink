@@ -1,45 +1,33 @@
 "use client";
 
-import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, BookOpen, Search } from "lucide-react";
-import { getGlossary, deleteFromGlossary, translateOffline, getHistory, saveHistory, COMMON_PHRASES } from "@/lib/offline-engine";
+import React, { useState, useEffect } from "react";
+import { BookOpen, Search } from "lucide-react";
+import { getGlossary, COMMON_PHRASES } from "@/lib/offline-engine";
 
 export function GlossaryManager() {
-  const [glossary, setGlossary] = useState<{ ilonggo: string; english: string; learnedAt: number }[]>([]);
-  const [newIlonggo, setNewIlonggo] = useState("");
-  const [newEnglish, setNewEnglish] = useState("");
+  const [glossary, setGlossary] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<"phrases" | "learned">("phrases");
+  const [category, setCategory] = useState("all");
   const [search, setSearch] = useState("");
-  const [activeTab, setActiveTab] = useState<"glossary" | "phrases">("glossary");
-  const [phraseCategory, setPhraseCategory] = useState<string>("all");
 
-  React.useEffect(() => {
+  useEffect(() => {
     setGlossary(getGlossary());
   }, []);
 
-  const handleAdd = () => {
-    if (!newIlonggo.trim() || !newEnglish.trim()) return;
-    const entry = { ilonggo: newIlonggo.trim(), english: newEnglish.trim(), learnedAt: Date.now() };
-    const updated = [...glossary, entry];
-    setGlossary(updated);
-    localStorage.setItem("ilonggolink_glossary", JSON.stringify(updated));
-    setNewIlonggo("");
-    setNewEnglish("");
-  };
+  const CATEGORIES = [
+    { key: "all", label: "All" },
+    { key: "greeting", label: "Greetings" },
+    { key: "food", label: "Food" },
+    { key: "money", label: "Shopping" },
+    { key: "transport", label: "Travel" },
+    { key: "emergency", label: "Emergency" },
+    { key: "social", label: "Social" },
+    { key: "basic", label: "Basics" },
+  ];
 
-  const handleDelete = (ilonggo: string) => {
-    deleteFromGlossary(ilonggo);
-    setGlossary(getGlossary());
-  };
-
-  const handleTranslateFromGlossary = (ilonggo: string) => {
-    const glossary = getGlossary();
-    const result = translateOffline(ilonggo, "English", glossary);
-    saveHistory(ilonggo, result);
-  };
+  const phrases = category === "all"
+    ? COMMON_PHRASES
+    : COMMON_PHRASES.filter((p: any) => p.category === category);
 
   const filtered = glossary.filter(
     (item) =>
@@ -47,139 +35,85 @@ export function GlossaryManager() {
       item.english.toLowerCase().includes(search.toLowerCase())
   );
 
-  const CATEGORIES = [
-    { key: "greeting", label: "Greetings" },
-    { key: "food", label: "Food & Drink" },
-    { key: "money", label: "Shopping" },
-    { key: "transport", label: "Transport" },
-    { key: "emergency", label: "Emergency" },
-    { key: "medical", label: "Medical" },
-    { key: "social", label: "Social" },
-    { key: "family", label: "Family" },
-    { key: "directions", label: "Directions" },
-    { key: "basic", label: "Basics" },
-    { key: "time", label: "Time" },
-    { key: "question", label: "Questions" },
-  ];
-
-  const phrases = phraseCategory === "all"
-    ? COMMON_PHRASES
-    : COMMON_PHRASES.filter((p: any) => p.category === phraseCategory);
-
   return (
-    <div className="space-y-6 max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex gap-2">
-        <Button
-          variant={activeTab === "glossary" ? "default" : "outline"}
-          onClick={() => setActiveTab("glossary")}
-          className="flex-1"
-        >
-          <BookOpen className="w-4 h-4 mr-2" />
-          My Glossary ({glossary.length})
-        </Button>
-        <Button
-          variant={activeTab === "phrases" ? "default" : "outline"}
+    <div className="px-5 py-6 max-w-md mx-auto space-y-5">
+      <div className="flex gap-2 bg-gray-100 p-1 rounded-xl">
+        <button
           onClick={() => setActiveTab("phrases")}
-          className="flex-1"
+          className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
+            activeTab === "phrases" ? "bg-white shadow-sm text-gray-900" : "text-gray-500"
+          }`}
         >
-          Common Phrases
-        </Button>
+          Phrases
+        </button>
+        <button
+          onClick={() => setActiveTab("learned")}
+          className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
+            activeTab === "learned" ? "bg-white shadow-sm text-gray-900" : "text-gray-500"
+          }`}
+        >
+          Learned ({glossary.length})
+        </button>
       </div>
 
-      {activeTab === "glossary" && (
+      {activeTab === "phrases" && (
         <>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Add New Word</CardTitle>
-              <CardDescription>Words you add here will be used in translations automatically.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <Textarea
-                  placeholder="Ilonggo word or phrase"
-                  value={newIlonggo}
-                  onChange={(e) => setNewIlonggo(e.target.value)}
-                  className="min-h-[48px]"
-                />
-                <Textarea
-                  placeholder="English meaning"
-                  value={newEnglish}
-                  onChange={(e) => setNewEnglish(e.target.value)}
-                  className="min-h-[48px]"
-                />
-              </div>
-              <Button onClick={handleAdd} disabled={!newIlonggo.trim() || !newEnglish.trim()}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add to Glossary
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.key}
+                onClick={() => setCategory(cat.key)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
+                  category === cat.key
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
 
+          <div className="space-y-2">
+            {phrases.map((phrase: any, i: number) => (
+              <div key={i} className="p-4 bg-white rounded-2xl border border-gray-200">
+                <p className="font-semibold text-base">{phrase.ilonggo}</p>
+                <p className="text-sm text-gray-500 mt-0.5">{phrase.english}</p>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {activeTab === "learned" && (
+        <>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search glossary..."
+              placeholder="Search..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-lg border bg-background text-sm"
+              className="w-full pl-10 pr-4 py-2.5 bg-white rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           {filtered.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">No words learned yet</p>
-              <p className="text-sm mt-1">Add words above or use the Learning tab to fix translations.</p>
+            <div className="text-center py-12 text-gray-400">
+              <BookOpen className="w-10 h-10 mx-auto mb-3 opacity-30" />
+              <p className="text-sm">No words learned yet</p>
+              <p className="text-xs mt-1">Use Word Collector to add words</p>
             </div>
           ) : (
             <div className="space-y-2">
               {filtered.map((item) => (
-                <div
-                  key={item.ilonggo}
-                  className="p-4 rounded-xl border bg-card flex items-center justify-between"
-                >
-                  <div>
-                    <p className="font-semibold">{item.ilonggo}</p>
-                    <p className="text-sm text-primary">{item.english}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => handleTranslateFromGlossary(item.ilonggo)}>
-                      Test
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleDelete(item.ilonggo)}>
-                      <Trash2 className="w-4 h-4 text-muted-foreground" />
-                    </Button>
-                  </div>
+                <div key={item.ilonggo} className="p-4 bg-white rounded-2xl border border-gray-200">
+                  <p className="font-semibold text-base">{item.ilonggo}</p>
+                  <p className="text-sm text-blue-600 mt-0.5">{item.english}</p>
                 </div>
               ))}
             </div>
           )}
-        </>
-      )}
-
-      {activeTab === "phrases" && (
-        <>
-          <Select value={phraseCategory} onValueChange={setPhraseCategory}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Phrases</SelectItem>
-              {CATEGORIES.map((cat) => (
-                <SelectItem key={cat.key} value={cat.key}>{cat.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <div className="space-y-2">
-            {phrases.map((phrase: any, i: number) => (
-              <div key={i} className="p-4 rounded-xl border bg-card">
-                <p className="font-semibold text-lg">{phrase.ilonggo}</p>
-                <p className="text-primary mt-1">{phrase.english}</p>
-              </div>
-            ))}
-          </div>
         </>
       )}
     </div>

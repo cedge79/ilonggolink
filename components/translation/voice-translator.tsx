@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Mic, Square, Loader2, Volume2, ShieldCheck, X } from "lucide-react";
+import { Mic, Square, Loader2, Volume2, X } from "lucide-react";
 import { translateOffline, getGlossary } from "@/lib/offline-engine";
 
 export function VoiceTranslator() {
@@ -28,22 +27,16 @@ export function VoiceTranslator() {
       };
 
       recognitionRef.current.onerror = (event: any) => {
-        console.error("Speech Recognition Error", event.error);
         setIsListening(false);
         if (event.error === "not-allowed") setHasPermission(false);
       };
 
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-      };
+      recognitionRef.current.onend = () => setIsListening(false);
     }
   }, []);
 
   const startListening = () => {
-    if (!recognitionRef.current) {
-      alert("Your browser doesn't support local speech recognition.");
-      return;
-    }
+    if (!recognitionRef.current) return;
     setResult(null);
     setIsListening(true);
     recognitionRef.current.start();
@@ -63,95 +56,97 @@ export function VoiceTranslator() {
       const translated = translateOffline(text, "English", glossary);
       setResult({ transcribed: text, translated });
       setIsProcessing(false);
-      speakText(translated);
-    }, 400);
+    }, 300);
   };
 
   const speakText = (text: string) => {
-    const cleanText = text.replace(/\(some words unknown\)/g, "");
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = "en-US";
-    window.speechSynthesis.speak(utterance);
+    const clean = text.replace(/\(some words unknown\)/g, "");
+    const u = new SpeechSynthesisUtterance(clean);
+    u.lang = "en-US";
+    window.speechSynthesis.speak(u);
   };
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <Card className="border-border shadow-md overflow-hidden bg-card/50 backdrop-blur-sm">
-        <CardHeader className="text-center pb-2">
-          <div className="flex justify-center mb-4">
-            <div className="flex items-center gap-2 bg-primary/10 px-4 py-1.5 rounded-full border border-primary/20">
-              <ShieldCheck className="w-4 h-4 text-primary" />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-primary">100% Offline Voice Core</span>
-            </div>
-          </div>
-          <CardTitle className="text-2xl font-headline font-bold text-primary">Offline Voice</CardTitle>
-          <CardDescription>Speak in Ilonggo. Your phone processes everything locally.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center p-8 space-y-8">
-          {hasPermission === false && (
-            <div className="mb-4 p-4 rounded-lg border border-red-200 bg-red-50 w-full">
-              <div className="flex items-center gap-2">
-                <X className="h-4 w-4 text-red-600" />
-                <div>
-                  <p className="font-bold text-sm text-red-800">Mic Access Blocked</p>
-                  <p className="text-xs text-red-600">Enable microphone in browser settings to use voice.</p>
-                </div>
-              </div>
-            </div>
+    <div className="px-5 py-8 max-w-md mx-auto space-y-8">
+      <div className="text-center space-y-2">
+        <p className="text-sm text-gray-500">Tap and speak in Ilonggo</p>
+      </div>
+
+      <div className="flex justify-center">
+        <div className="relative">
+          {isListening && (
+            <>
+              <div className="absolute inset-0 animate-ping rounded-full bg-blue-200 opacity-50" />
+              <div className="absolute -inset-4 animate-pulse rounded-full bg-blue-100 opacity-30" />
+            </>
           )}
-
-          <div className="relative">
-            {isListening && (
-              <div className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
-            )}
-            <Button
-              size="icon"
-              className={`w-24 h-24 rounded-full shadow-xl transition-all duration-300 transform ${isListening ? "bg-destructive scale-110" : "bg-primary scale-100"}`}
-              onClick={isListening ? stopListening : startListening}
-              disabled={isProcessing}
-            >
-              {isListening ? <Square className="w-8 h-8 fill-current" /> : <Mic className="w-10 h-10" />}
-            </Button>
-          </div>
-
-          <div className="text-center space-y-4 w-full max-w-sm">
+          <button
+            onClick={isListening ? stopListening : startListening}
+            disabled={isProcessing}
+            className={`relative w-28 h-28 rounded-full flex items-center justify-center transition-all duration-300 shadow-xl ${
+              isListening
+                ? "bg-red-500 scale-110 shadow-red-500/30"
+                : "bg-blue-600 scale-100 shadow-blue-600/30 active:scale-95"
+            }`}
+          >
             {isListening ? (
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-muted-foreground animate-pulse">Listening locally...</div>
-              </div>
-            ) : isProcessing ? (
-              <div className="flex flex-col items-center gap-4 py-4">
-                <Loader2 className="w-10 h-10 text-accent animate-spin" />
-                <span className="text-sm font-semibold italic">Processing locally...</span>
-              </div>
+              <Square className="w-10 h-10 text-white fill-white" />
             ) : (
-              <p className="text-sm font-medium text-muted-foreground">Tap the mic and speak in Ilonggo</p>
+              <Mic className="w-10 h-10 text-white" />
             )}
-          </div>
-        </CardContent>
-      </Card>
+          </button>
+        </div>
+      </div>
+
+      {hasPermission === false && (
+        <div className="p-4 bg-red-50 rounded-xl border border-red-200 text-center">
+          <p className="text-sm font-medium text-red-700">Microphone access blocked</p>
+          <p className="text-xs text-red-500 mt-1">Enable in Safari settings</p>
+        </div>
+      )}
+
+      {isListening && (
+        <p className="text-center text-sm font-medium text-blue-600 animate-pulse">Listening...</p>
+      )}
+
+      {isProcessing && (
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+          <p className="text-sm text-gray-500">Translating...</p>
+        </div>
+      )}
 
       {result && (
-        <Card className="border-primary/20 bg-primary/5 animate-in zoom-in-95">
-          <CardContent className="p-6 space-y-4">
-            <div className="space-y-1">
-              <div className="text-[10px] font-bold uppercase text-primary/70">You said (Ilonggo)</div>
-              <p className="text-lg italic">&ldquo;{result.transcribed}&rdquo;</p>
-            </div>
-            <div className="flex justify-center">
-              <svg className="w-4 h-4 text-muted-foreground rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
-            </div>
-            <div className="flex items-center justify-between gap-4">
-              <div className="space-y-1">
-                <div className="text-[10px] font-bold uppercase text-accent">English Translation</div>
-                <p className="text-xl font-bold">{result.translated}</p>
-              </div>
-              <Button variant="outline" size="icon" onClick={() => speakText(result.translated)}>
-                <Volume2 className="w-4 h-4" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          <div className="bg-gray-100 rounded-2xl p-4">
+            <p className="text-xs text-gray-500 font-medium mb-1">You said</p>
+            <p className="text-lg font-medium italic">&ldquo;{result.transcribed}&rdquo;</p>
+          </div>
+
+          <div className="flex justify-center">
+            <ArrowDown className="w-4 h-4 text-gray-400" />
+          </div>
+
+          <div className="bg-blue-50 rounded-2xl p-4">
+            <p className="text-xs text-blue-600 font-medium mb-1">English</p>
+            <p className="text-xl font-bold text-blue-900">
+              {result.translated.replace(" (some words unknown)", "")}
+            </p>
+            {result.translated.includes("?") && (
+              <p className="text-xs text-amber-600 mt-2">Some words unknown</p>
+            )}
+          </div>
+
+          <div className="flex justify-center">
+            <button
+              onClick={() => speakText(result.translated)}
+              className="flex items-center gap-2 px-5 py-2.5 bg-white rounded-xl border border-gray-200 text-sm font-medium shadow-sm active:scale-[0.98] transition-transform"
+            >
+              <Volume2 className="w-4 h-4" />
+              Play English
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

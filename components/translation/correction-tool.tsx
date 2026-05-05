@@ -1,20 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/input";
 import { Check, Save, MessageSquarePlus } from "lucide-react";
-import { saveCorrection, getCorrections, addWordToGlossary, getGlossary, translateOffline } from "@/lib/offline-engine";
+import { saveCorrection, getCorrections, addWordToGlossary } from "@/lib/offline-engine";
 
-interface CorrectionToolProps {
-  initialOriginal?: string;
-  initialAiTranslation?: string;
-}
-
-export function CorrectionTool({ initialOriginal, initialAiTranslation }: CorrectionToolProps) {
+export function CorrectionTool({ initialOriginal, initialAiTranslation }: { initialOriginal?: string; initialAiTranslation?: string }) {
   const [originalText, setOriginalText] = useState(initialOriginal || "");
-  const [wrongTranslation, setWrongTranslation] = useState(initialAiTranslation || "");
   const [correctTranslation, setCorrectTranslation] = useState("");
   const [corrections, setCorrections] = useState<any[]>([]);
   const [saved, setSaved] = useState(false);
@@ -25,116 +16,81 @@ export function CorrectionTool({ initialOriginal, initialAiTranslation }: Correc
 
   useEffect(() => {
     if (initialOriginal) setOriginalText(initialOriginal);
-    if (initialAiTranslation) setWrongTranslation(initialAiTranslation);
-  }, [initialOriginal, initialAiTranslation]);
+  }, [initialOriginal]);
 
   const handleSubmit = () => {
     if (!originalText.trim() || !correctTranslation.trim()) return;
-
-    saveCorrection(originalText.trim(), wrongTranslation, correctTranslation.trim());
+    saveCorrection(originalText.trim(), "", correctTranslation.trim());
     addWordToGlossary(originalText.trim(), correctTranslation.trim());
-
     setSaved(true);
     setCorrections(getCorrections());
     setOriginalText("");
-    setWrongTranslation("");
     setCorrectTranslation("");
-
-    setTimeout(() => setSaved(false), 3000);
-  };
-
-  const handleQuickCorrect = () => {
-    if (!originalText.trim() || !correctTranslation.trim()) return;
-    const glossary = getGlossary();
-    const testResult = translateOffline(originalText, "English", glossary);
-    setWrongTranslation(testResult);
-    handleSubmit();
+    setTimeout(() => setSaved(false), 1500);
   };
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <Card className={saved ? "border-green-300 bg-green-50" : ""}>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <MessageSquarePlus className="w-5 h-5" />
-            Teach the App
-          </CardTitle>
-          <CardDescription>
-            When you see a wrong translation, enter the correct meaning here. The app remembers it forever.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {saved && (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-green-100 text-green-800 text-sm">
-              <Check className="w-4 h-4" />
-              Saved! This word will now be translated correctly.
-            </div>
-          )}
+    <div className="px-5 py-6 max-w-md mx-auto space-y-6">
+      <div className="text-center space-y-1">
+        <div className="w-12 h-12 mx-auto bg-amber-100 rounded-2xl flex items-center justify-center">
+          <MessageSquarePlus className="w-6 h-6 text-amber-600" />
+        </div>
+        <h2 className="text-xl font-bold">Teach the App</h2>
+        <p className="text-sm text-gray-500">Fix a wrong translation</p>
+      </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Ilonggo word or phrase</label>
-            <Textarea
-              placeholder="e.g. gwapo"
-              value={originalText}
-              onChange={(e) => setOriginalText(e.target.value)}
-            />
-          </div>
+      <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-4 shadow-sm">
+        <div className="space-y-2">
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Ilonggo word</label>
+          <input
+            type="text"
+            placeholder="e.g. gwapo"
+            value={originalText}
+            onChange={(e) => setOriginalText(e.target.value)}
+            className="w-full px-4 py-3 bg-gray-50 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all"
+            autoFocus
+          />
+        </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">What the app said (wrong)</label>
-            <Textarea
-              placeholder="e.g. gwapo"
-              value={wrongTranslation}
-              onChange={(e) => setWrongTranslation(e.target.value)}
-              className="text-muted-foreground"
-            />
-          </div>
+        <div className="space-y-2">
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Correct English</label>
+          <input
+            type="text"
+            placeholder="e.g. handsome"
+            value={correctTranslation}
+            onChange={(e) => setCorrectTranslation(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && originalText.trim() && correctTranslation.trim()) handleSubmit(); }}
+            className="w-full px-4 py-3 bg-gray-50 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all"
+          />
+        </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Correct English meaning</label>
-            <Textarea
-              placeholder="e.g. handsome"
-              value={correctTranslation}
-              onChange={(e) => setCorrectTranslation(e.target.value)}
-              className="border-primary/30"
-            />
-          </div>
+        <button
+          onClick={handleSubmit}
+          disabled={!originalText.trim() || !correctTranslation.trim()}
+          className="w-full flex items-center justify-center gap-2 py-3 bg-amber-500 text-white rounded-xl font-semibold text-sm disabled:opacity-40 active:scale-[0.98] transition-all"
+        >
+          <Save className="w-4 h-4" />
+          Save Correction
+        </button>
+      </div>
 
-          <div className="flex gap-3">
-            <Button onClick={handleSubmit} disabled={!originalText.trim() || !correctTranslation.trim()}>
-              <Save className="w-4 h-4 mr-2" />
-              Save Correction
-            </Button>
-            <Button variant="outline" onClick={handleQuickCorrect} disabled={!originalText.trim() || !correctTranslation.trim()}>
-              <Check className="w-4 h-4 mr-2" />
-              Save & Test
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {saved && (
+        <div className="text-center text-sm text-green-600 font-medium">
+          <Check className="w-4 h-4 inline mr-1" />
+          Saved!
+        </div>
+      )}
 
       {corrections.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Corrections History</CardTitle>
-            <CardDescription>{corrections.length} words learned</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {corrections.slice(0, 20).map((c, i) => (
-                <div key={i} className="p-3 rounded-lg border bg-card text-sm">
-                  <div className="flex justify-between">
-                    <span className="font-medium">{c.original}</span>
-                    <span className="text-primary font-bold">{c.correctTranslation}</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    was: {c.wrongTranslation}
-                  </div>
-                </div>
-              ))}
+        <div className="space-y-2">
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-1">Corrections</h3>
+          {corrections.slice(0, 10).map((c, i) => (
+            <div key={i} className="p-3 bg-white rounded-xl border border-gray-200 flex justify-between">
+              <span className="font-medium">{c.original}</span>
+              <span className="text-amber-600 font-semibold">{c.correctTranslation}</span>
             </div>
-          </CardContent>
-        </Card>
+          ))}
+        </div>
       )}
     </div>
   );
