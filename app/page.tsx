@@ -49,9 +49,9 @@ export default function Home() {
         return <WordCollector />;
       case "settings":
         return (
-          <div className="max-w-md mx-auto px-5 py-8 space-y-8">
+          <div className="space-y-8 py-8">
             <div className="text-center space-y-2">
-              <div className="w-16 h-16 mx-auto bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/25">
+              <div className="w-16 h-16 mx-auto bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
                 <ArrowRightLeft className="w-8 h-8 text-white" />
               </div>
               <h1 className="text-2xl font-bold">IlonggoLink</h1>
@@ -61,21 +61,21 @@ export default function Home() {
             <div className="space-y-3">
               <button
                 onClick={() => setActiveView("collector")}
-                className="w-full flex items-center gap-4 p-4 bg-white rounded-2xl border border-gray-200 active:scale-[0.98] transition-transform"
+                className="ios-card w-full flex items-center gap-4 active:scale-[0.98] transition-transform"
               >
                 <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
                   <Users className="w-5 h-5 text-blue-600" />
                 </div>
                 <div className="flex-1 text-left">
                   <p className="font-semibold text-sm">Word Collector</p>
-                  <p className="text-xs text-gray-500">Learn words with your mrs</p>
+                  <p className="text-xs text-gray-500">Learn words with your mom</p>
                 </div>
                 <svg className="w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6" /></svg>
               </button>
 
               <button
                 onClick={() => setActiveView("glossary")}
-                className="w-full flex items-center gap-4 p-4 bg-white rounded-2xl border border-gray-200 active:scale-[0.98] transition-transform"
+                className="ios-card w-full flex items-center gap-4 active:scale-[0.98] transition-transform"
               >
                 <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
                   <BookMarked className="w-5 h-5 text-green-600" />
@@ -121,9 +121,9 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200 px-5 py-3">
-        <div className="flex items-center justify-between max-w-md mx-auto">
+    <div className="app-container">
+      <header className="ios-header">
+        <div className="ios-header-inner">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <ArrowRightLeft className="w-4 h-4 text-white" />
@@ -137,21 +137,19 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="flex-1 pb-24 overflow-y-auto">
+      <main className="main-content">
         {renderView()}
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-gray-200 z-50 safe-area-inset-bottom">
-        <div className="max-w-md mx-auto flex justify-around py-2 px-2">
+      <nav className="bottom-nav">
+        <div className="bottom-nav-inner">
           {tabs.map((tab) => {
             const isActive = activeView === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveView(tab.id)}
-                className={`flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-xl transition-colors ${
-                  isActive ? "text-blue-600" : "text-gray-400"
-                }`}
+                className={`bottom-nav-btn ${isActive ? "active" : ""}`}
               >
                 <tab.icon className={`w-5 h-5 ${isActive ? "stroke-[2.5]" : ""}`} />
                 <span className={`text-[10px] font-medium ${isActive ? "font-semibold" : ""}`}>
