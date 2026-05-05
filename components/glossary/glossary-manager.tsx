@@ -37,11 +37,11 @@ export function GlossaryManager() {
 
   return (
     <div className="px-5 py-6 max-w-md mx-auto space-y-5">
-      <div className="flex gap-2 bg-gray-100 p-1 rounded-xl">
+      <div className="flex gap-2 bg-slate-800 p-1 rounded-xl">
         <button
           onClick={() => setActiveTab("phrases")}
           className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
-            activeTab === "phrases" ? "bg-white shadow-sm text-gray-900" : "text-gray-500"
+            activeTab === "phrases" ? "bg-slate-700 shadow-sm text-white" : "text-gray-400"
           }`}
         >
           Phrases
@@ -49,7 +49,7 @@ export function GlossaryManager() {
         <button
           onClick={() => setActiveTab("learned")}
           className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
-            activeTab === "learned" ? "bg-white shadow-sm text-gray-900" : "text-gray-500"
+            activeTab === "learned" ? "bg-slate-700 shadow-sm text-white" : "text-gray-400"
           }`}
         >
           Learned ({glossary.length})
@@ -65,8 +65,8 @@ export function GlossaryManager() {
                 onClick={() => setCategory(cat.key)}
                 className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
                   category === cat.key
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-600"
+                    ? "bg-sky-600 text-white"
+                    : "bg-slate-800 text-gray-400 border border-slate-700"
                 }`}
               >
                 {cat.label}
@@ -76,7 +76,7 @@ export function GlossaryManager() {
 
           <div className="space-y-2">
             {phrases.map((phrase: any, i: number) => (
-              <div key={i} className="p-4 bg-white rounded-2xl border border-gray-200">
+              <div key={i} className="p-4 ios-card">
                 <p className="font-semibold text-base">{phrase.ilonggo}</p>
                 <p className="text-sm text-gray-500 mt-0.5">{phrase.english}</p>
               </div>
@@ -88,18 +88,18 @@ export function GlossaryManager() {
       {activeTab === "learned" && (
         <>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
             <input
               type="text"
               placeholder="Search..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-800 rounded-xl border border-slate-700 text-sm text-white focus:outline-none focus:ring-2 focus:ring-sky-500 ios-input"
             />
           </div>
 
           {filtered.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">
+            <div className="text-center py-12 text-gray-500">
               <BookOpen className="w-10 h-10 mx-auto mb-3 opacity-30" />
               <p className="text-sm">No words learned yet</p>
               <p className="text-xs mt-1">Use Word Collector to add words</p>
@@ -107,9 +107,9 @@ export function GlossaryManager() {
           ) : (
             <div className="space-y-2">
               {filtered.map((item) => (
-                <div key={item.ilonggo} className="p-4 bg-white rounded-2xl border border-gray-200">
+                <div key={item.ilonggo} className="p-4 ios-card">
                   <p className="font-semibold text-base">{item.ilonggo}</p>
-                  <p className="text-sm text-blue-600 mt-0.5">{item.english}</p>
+                  <p className="text-sm text-sky-400 mt-0.5">{item.english}</p>
                 </div>
               ))}
             </div>

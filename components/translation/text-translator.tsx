@@ -36,10 +36,10 @@ export function TextTranslator({ onTranslate }: { onTranslate?: (orig: string, t
           <span className="section-title mb-0">Translate</span>
         </div>
         <Select value={targetLang} onValueChange={(val) => setTargetLang(val as "English" | "Ilonggo")}>
-          <SelectTrigger className="w-36 h-9 bg-white border-2 border-blue-200 rounded-xl text-sm font-medium shadow-sm">
+          <SelectTrigger className="w-36 h-9 bg-slate-800 border-2 border-sky-800 rounded-xl text-sm font-medium shadow-sm text-white">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-slate-800 border-slate-700 text-white">
             <SelectItem value="English">to English</SelectItem>
             <SelectItem value="Ilonggo">to Ilonggo</SelectItem>
           </SelectContent>
@@ -53,8 +53,8 @@ export function TextTranslator({ onTranslate }: { onTranslate?: (orig: string, t
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
         />
-        <div className="flex items-center justify-between px-4 pb-3 border-t border-gray-100">
-          <span className="text-xs text-gray-400">{inputText.length} characters</span>
+        <div className="flex items-center justify-between px-4 pb-3 border-t border-slate-700/50">
+          <span className="text-xs text-gray-500">{inputText.length} characters</span>
           <button
             onClick={handleTranslate}
             disabled={isTranslating || !inputText.trim()}
@@ -68,19 +68,19 @@ export function TextTranslator({ onTranslate }: { onTranslate?: (orig: string, t
       {translatedText && (
         <div className="result-box overflow-hidden">
           <div className="px-4 pt-4 pb-3">
-            <p className="text-lg leading-relaxed text-blue-900 font-medium">
+            <p className="text-lg leading-relaxed text-sky-100 font-medium">
               {translatedText.replace(" (some words unknown)", "")}
             </p>
             {translatedText.includes("?") && (
-              <div className="mt-3 p-2 bg-amber-50 rounded-lg border border-amber-200">
-                <p className="text-xs text-amber-700 font-medium">Some words unknown — try Word Collector to teach the app</p>
+              <div className="mt-3 p-2 bg-amber-900/30 rounded-lg border border-amber-800">
+                <p className="text-xs text-amber-300 font-medium">Some words unknown — try Word Collector to teach the app</p>
               </div>
             )}
           </div>
           <div className="px-4 pb-3 flex justify-end">
             <button
               onClick={() => copyToClipboard(translatedText.replace(" (some words unknown)", ""))}
-              className="flex items-center gap-1.5 text-xs text-blue-700 font-medium px-3 py-1.5 rounded-lg bg-blue-100 active:bg-blue-200 transition-colors"
+              className="flex items-center gap-1.5 text-xs text-sky-300 font-medium px-3 py-1.5 rounded-lg bg-sky-900/40 active:bg-sky-900/60 transition-colors"
             >
               <Copy className="w-3.5 h-3.5" />
               Copy

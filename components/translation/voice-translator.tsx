@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Mic, Square, Loader2, Volume2, X } from "lucide-react";
+import { Mic, Square, Loader2, Volume2, ArrowDown } from "lucide-react";
 import { translateOffline, getGlossary } from "@/lib/offline-engine";
 
 export function VoiceTranslator() {
@@ -76,8 +76,8 @@ export function VoiceTranslator() {
         <div className="relative">
           {isListening && (
             <>
-              <div className="absolute inset-0 animate-ping rounded-full bg-blue-200 opacity-50" />
-              <div className="absolute -inset-4 animate-pulse rounded-full bg-blue-100 opacity-30" />
+              <div className="absolute inset-0 animate-ping rounded-full bg-sky-900 opacity-50" />
+              <div className="absolute -inset-4 animate-pulse rounded-full bg-sky-800 opacity-30" />
             </>
           )}
           <button
@@ -85,8 +85,8 @@ export function VoiceTranslator() {
             disabled={isProcessing}
             className={`relative w-28 h-28 rounded-full flex items-center justify-center transition-all duration-300 shadow-xl ${
               isListening
-                ? "bg-red-500 scale-110 shadow-red-500/30"
-                : "bg-blue-600 scale-100 shadow-blue-600/30 active:scale-95"
+                ? "bg-red-600 scale-110 shadow-red-600/40"
+                : "bg-sky-600 scale-100 shadow-sky-600/40 active:scale-95"
             }`}
           >
             {isListening ? (
@@ -99,48 +99,48 @@ export function VoiceTranslator() {
       </div>
 
       {hasPermission === false && (
-        <div className="p-4 bg-red-50 rounded-xl border border-red-200 text-center">
-          <p className="text-sm font-medium text-red-700">Microphone access blocked</p>
-          <p className="text-xs text-red-500 mt-1">Enable in Safari settings</p>
+        <div className="p-4 bg-red-900/30 rounded-xl border border-red-800 text-center">
+          <p className="text-sm font-medium text-red-300">Microphone access blocked</p>
+          <p className="text-xs text-red-400 mt-1">Enable in Safari settings</p>
         </div>
       )}
 
       {isListening && (
-        <p className="text-center text-sm font-medium text-blue-600 animate-pulse">Listening...</p>
+        <p className="text-center text-sm font-medium text-sky-400 animate-pulse">Listening...</p>
       )}
 
       {isProcessing && (
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+          <Loader2 className="w-8 h-8 text-sky-400 animate-spin" />
           <p className="text-sm text-gray-500">Translating...</p>
         </div>
       )}
 
       {result && (
         <div className="space-y-4">
-          <div className="bg-gray-100 rounded-2xl p-4">
+          <div className="ios-card">
             <p className="text-xs text-gray-500 font-medium mb-1">You said</p>
             <p className="text-lg font-medium italic">&ldquo;{result.transcribed}&rdquo;</p>
           </div>
 
           <div className="flex justify-center">
-            <ArrowDown className="w-4 h-4 text-gray-400" />
+            <ArrowDown className="w-4 h-4 text-gray-500" />
           </div>
 
-          <div className="bg-blue-50 rounded-2xl p-4">
-            <p className="text-xs text-blue-600 font-medium mb-1">English</p>
-            <p className="text-xl font-bold text-blue-900">
+          <div className="result-box">
+            <p className="text-xs text-sky-300 font-medium mb-1">English</p>
+            <p className="text-xl font-bold text-white">
               {result.translated.replace(" (some words unknown)", "")}
             </p>
             {result.translated.includes("?") && (
-              <p className="text-xs text-amber-600 mt-2">Some words unknown</p>
+              <p className="text-xs text-amber-300 mt-2">Some words unknown</p>
             )}
           </div>
 
           <div className="flex justify-center">
             <button
               onClick={() => speakText(result.translated)}
-              className="flex items-center gap-2 px-5 py-2.5 bg-white rounded-xl border border-gray-200 text-sm font-medium shadow-sm active:scale-[0.98] transition-transform"
+              className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 rounded-xl border border-slate-700 text-sm font-medium shadow-lg active:scale-[0.98] transition-transform text-white"
             >
               <Volume2 className="w-4 h-4" />
               Play English
