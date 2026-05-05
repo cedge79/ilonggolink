@@ -30,10 +30,13 @@ export function TextTranslator({ onTranslate }: { onTranslate?: (orig: string, t
   };
 
   return (
-    <div className="px-5 py-6 max-w-md mx-auto space-y-4">
+    <div className="px-5 py-6 max-w-md mx-auto space-y-5">
       <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="section-title mb-0">Translate</span>
+        </div>
         <Select value={targetLang} onValueChange={(val) => setTargetLang(val as "English" | "Ilonggo")}>
-          <SelectTrigger className="w-36 h-9 bg-gray-100 border-0 rounded-xl text-sm font-medium">
+          <SelectTrigger className="w-36 h-9 bg-white border-2 border-blue-200 rounded-xl text-sm font-medium shadow-sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -43,40 +46,41 @@ export function TextTranslator({ onTranslate }: { onTranslate?: (orig: string, t
         </Select>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+      <div className="ios-card overflow-hidden">
         <textarea
-          placeholder="Type in Ilonggo..."
-          className="w-full px-4 pt-4 pb-3 min-h-[160px] resize-none text-lg leading-relaxed bg-transparent focus:outline-none"
+          placeholder="Type in Ilonggo or English..."
+          className="w-full px-4 pt-4 pb-3 min-h-[160px] resize-none text-lg leading-relaxed bg-transparent focus:outline-none ios-input"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
         />
         <div className="flex items-center justify-between px-4 pb-3 border-t border-gray-100">
           <span className="text-xs text-gray-400">{inputText.length} characters</span>
-          <Button
-            size="sm"
+          <button
             onClick={handleTranslate}
             disabled={isTranslating || !inputText.trim()}
-            className="bg-blue-600 hover:bg-blue-700 rounded-xl px-5 h-9 text-sm font-semibold"
+            className="translate-btn px-5 py-2 h-9 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isTranslating ? "..." : "Translate"}
-          </Button>
+            {isTranslating ? "Translating..." : "Translate"}
+          </button>
         </div>
       </div>
 
       {translatedText && (
-        <div className="bg-blue-50 rounded-2xl border border-blue-100 overflow-hidden">
+        <div className="result-box overflow-hidden">
           <div className="px-4 pt-4 pb-3">
-            <p className={`text-lg leading-relaxed ${translatedText.includes("?") ? "text-amber-600" : "text-blue-900"}`}>
+            <p className="text-lg leading-relaxed text-blue-900 font-medium">
               {translatedText.replace(" (some words unknown)", "")}
             </p>
             {translatedText.includes("?") && (
-              <p className="text-xs text-amber-600 mt-2 font-medium">Some words unknown — try Word Collector to teach the app</p>
+              <div className="mt-3 p-2 bg-amber-50 rounded-lg border border-amber-200">
+                <p className="text-xs text-amber-700 font-medium">Some words unknown — try Word Collector to teach the app</p>
+              </div>
             )}
           </div>
           <div className="px-4 pb-3 flex justify-end">
             <button
               onClick={() => copyToClipboard(translatedText.replace(" (some words unknown)", ""))}
-              className="flex items-center gap-1.5 text-xs text-blue-600 font-medium px-3 py-1.5 rounded-lg bg-blue-100 active:bg-blue-200 transition-colors"
+              className="flex items-center gap-1.5 text-xs text-blue-700 font-medium px-3 py-1.5 rounded-lg bg-blue-100 active:bg-blue-200 transition-colors"
             >
               <Copy className="w-3.5 h-3.5" />
               Copy

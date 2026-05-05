@@ -63,12 +63,12 @@ export default function Home() {
                 onClick={() => setActiveView("collector")}
                 className="ios-card w-full flex items-center gap-4 active:scale-[0.98] transition-transform"
               >
-                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-                  <Users className="w-5 h-5 text-blue-600" />
+                <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
+                  <Users className="w-5 h-5 text-indigo-600" />
                 </div>
                 <div className="flex-1 text-left">
                   <p className="font-semibold text-sm">Word Collector</p>
-                  <p className="text-xs text-gray-500">Learn words with your mom</p>
+                  <p className="text-xs text-gray-500">Learn words with Nessa</p>
                 </div>
                 <svg className="w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6" /></svg>
               </button>

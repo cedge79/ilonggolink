@@ -5,7 +5,7 @@
 /* === INLINE FALLBACK STYLES === */
 body {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-  background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #dbeafe 100%);
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
   min-height: 100vh;
@@ -24,10 +24,11 @@ input, textarea, select {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(16px);
-  border-bottom: 1px solid #e5e7eb;
+  background: rgba(37, 99, 235, 0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   padding: 12px 20px;
+  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.3);
 }
 
 .ios-header-inner {
@@ -38,13 +39,18 @@ input, textarea, select {
   margin: 0 auto;
 }
 
+.ios-header h1 {
+  color: white;
+  font-weight: 700;
+}
+
 /* Bottom navigation */
 .bottom-nav {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(16px);
   border-top: 1px solid #e5e7eb;
   z-index: 50;
@@ -69,39 +75,43 @@ input, textarea, select {
   background: none;
   border: none;
   cursor: pointer;
-  color: #9ca3af;
-  transition: color 0.15s;
+  color: #6b7280;
+  transition: all 0.2s;
 }
 
 .bottom-nav-btn.active {
   color: #2563eb;
+  background: #eff6ff;
 }
 
 /* iOS Cards */
 .ios-card {
   background: white;
   border-radius: 16px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   padding: 16px;
   margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 /* Translate button */
 .translate-btn {
   width: 100%;
   padding: 14px;
-  background: #2563eb;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   color: white;
   border: none;
   border-radius: 12px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
 .translate-btn:active {
-  opacity: 0.8;
+  opacity: 0.9;
+  transform: scale(0.98);
 }
 
 /* iOS Input */
@@ -109,21 +119,23 @@ input, textarea, select {
   width: 100%;
   padding: 12px 16px;
   background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  border: 2px solid #e5e7eb;
   border-radius: 12px;
   font-size: 16px;
   outline: none;
-  transition: border-color 0.15s;
+  transition: all 0.2s;
 }
 
 .ios-input:focus {
   border-color: #2563eb;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 /* Result box */
 .result-box {
-  background: #f0f9ff;
-  border: 1px solid #bfdbfe;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 2px solid #93c5fd;
   border-radius: 12px;
   padding: 16px;
   font-size: 16px;
@@ -132,7 +144,7 @@ input, textarea, select {
 /* Main layout */
 .app-container {
   min-height: 100vh;
-  background: #f9fafb;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #dbeafe 100%);
   display: flex;
   flex-direction: column;
 }
@@ -147,4 +159,20 @@ input, textarea, select {
   padding-left: 20px;
   padding-right: 20px;
   padding-top: 16px;
+}
+
+/* Section title */
+.section-title {
+  color: #1e40af;
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+/* Accent text */
+.accent-text {
+  color: #2563eb;
+  font-weight: 600;
 }
