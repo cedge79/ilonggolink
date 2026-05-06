@@ -33,6 +33,8 @@ export async function POST(req: Request) {
 
     const data = await response.json();
     
+    const transcript = data.results?.channels?.[0]?.alternatives?.[0]?.transcript || "";
+    
     return new Response(JSON.stringify({ transcript }), { status: 200 });
   } catch (error) {
     return new Response(JSON.stringify({ error: "Transcription failed" }), { status: 500 });
