@@ -94,7 +94,7 @@ export default function Home() {
     }
   };
 
-  const version = "2.0";
+  const version = "2.1";
   return (
     <div className="app-container">
       <header className="ios-header">
