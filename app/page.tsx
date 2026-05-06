@@ -14,8 +14,6 @@ import { TextTranslator } from "@/components/translation/text-translator";
 import { GlossaryManager } from "@/components/glossary/glossary-manager";
 import { WordCollector } from "@/components/glossary/word-collector";
 import { CorrectionTool } from "@/components/translation/correction-tool";
-import { VoiceTranslator } from "@/components/translation/voice-translator";
-import { ConversationTranslator } from "@/components/translation/conversation-translator";
 
 type ViewMode = "text" | "voice" | "conversation" | "glossary" | "collector" | "settings";
 
@@ -29,8 +27,6 @@ export default function Home() {
 
   const tabs = [
     { id: "text" as ViewMode, label: "Translate", icon: Type },
-    { id: "voice" as ViewMode, label: "Voice", icon: Mic },
-    { id: "conversation" as ViewMode, label: "Mediator", icon: Headphones },
     { id: "glossary" as ViewMode, label: "Phrases", icon: BookMarked },
     { id: "settings" as ViewMode, label: "Settings", icon: Settings },
   ];
@@ -39,10 +35,6 @@ export default function Home() {
     switch (activeView) {
       case "text":
         return <TextTranslator onTranslate={handleTranslationComplete} />;
-      case "voice":
-        return <VoiceTranslator />;
-      case "conversation":
-        return <ConversationTranslator />;
       case "glossary":
         return <GlossaryManager />;
       case "collector":
@@ -88,30 +80,8 @@ export default function Home() {
               </button>
             </div>
 
-            <div className="p-5 bg-gray-50 rounded-2xl space-y-4">
-              <h3 className="font-semibold text-sm">How to install on your iPhone</h3>
-              <ol className="space-y-2 text-sm text-gray-600">
-                <li className="flex gap-2">
-                  <span className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold shrink-0">1</span>
-                  <span>Open this page in Safari</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold shrink-0">2</span>
-                  <span>Tap the Share button (box with arrow)</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold shrink-0">3</span>
-                  <span>Tap "Add to Home Screen"</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold shrink-0">4</span>
-                  <span>Tap Add — it works like a real app</span>
-                </li>
-              </ol>
-            </div>
-
             <p className="text-center text-[10px] text-gray-400 uppercase tracking-wider font-bold">
-               600+ words &bull; 150+ phrases &bull; v1.2
+              600+ words &bull; 150+ phrases &bull; v{version}
             </p>
           </div>
         );
@@ -120,7 +90,7 @@ export default function Home() {
     }
   };
 
-  const version = "1.4";
+  const version = "2.0";
   return (
     <div className="app-container">
       <header className="ios-header">
