@@ -12,11 +12,8 @@ export function VoiceTranslator() {
   const [isIOS, setIsIOS] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<BlobPart[]>([]);
+  const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const processorRef = useRef<ScriptProcessorNode | null>(null);
-  const pcmDataRef = useRef<Float32Array[]>([]);
 
   useEffect(() => {
     setIsIOS(/iPad|iPhone|iPod/.test(navigator.userAgent));
@@ -27,122 +24,52 @@ export function VoiceTranslator() {
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
-    if (processorRef.current) {
-      processorRef.current.disconnect();
-      processorRef.current = null;
-    }
-    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-  };
-
-  const floatTo16BitPCM = (floatData: Float32Array): ArrayBuffer => {
-    const buffer = new ArrayBuffer(floatData.length * 2);
-    const view = new DataView(buffer);
-    for (let i = 0; i < floatData.length; i++) {
-      let s = Math.max(-1, Math.min(1, floatData[i]));
-      view.setInt16(i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true);
-    }
-    return buffer;
-  };
-
-  const createWAV = (pcmData: Float32Array[], sampleRate: number): Blob => {
-    const length = pcmData.reduce((acc, arr) => acc + arr.length, 0);
-    const allPCM = new Float32Array(length);
-    let offset = 0;
-    for (const arr of pcmData) {
-      allPCM.set(arr, offset);
-      offset += arr.length;
-    }
-
-    const pcm16 = floatTo16BitPCM(allPCM);
-    const buffer = new ArrayBuffer(44 + pcm16.byteLength);
-    const view = new DataView(buffer);
-
-    const writeString = (offset: number, str: string) => {
-      for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
-    };
-
-    writeString(0, "RIFF");
-    view.setUint32(4, 36 + pcm16.byteLength, true);
-    writeString(8, "WAVE");
-    writeString(12, "fmt ");
-    view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true);
-    view.setUint16(22, 1, true);
-    view.setUint32(24, sampleRate, true);
-    view.setUint32(28, sampleRate * 2, true);
-    view.setUint16(32, 2, true);
-    view.setUint16(34, 16, true);
-    writeString(36, "data");
-    view.setUint32(40, pcm16.byteLength, true);
-
-    new Uint8Array(buffer, 44).set(new Uint8Array(pcm16));
-    return new Blob([buffer], { type: "audio/wav" });
   };
 
   const startListening = async () => {
     setError(null);
     setResult(null);
     chunksRef.current = [];
-    pcmDataRef.current = [];
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
       if (isIOS) {
-        const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
-        const audioContext = new AudioCtx({ sampleRate: 16000 });
-        await audioContext.resume();
-        audioContextRef.current = audioContext;
-        const source = audioContext.createMediaStreamSource(stream);
-        const processor = audioContext.createScriptProcessor(4096, 1, 1);
-        processorRef.current = processor;
-
-        processor.onaudioprocess = (e: any) => {
-          if (isListening) {
-            pcmDataRef.current.push(new Float32Array(e.inputBuffer.getChannelData(0)));
-          }
-        };
-
-        source.connect(processor);
-        processor.connect(audioContext.destination);
-        setIsListening(true);
-      } else {
-        const mimeTypes = ["audio/webm", "audio/mp4", "audio/aac", ""];
-        let selectedMime = "";
-        for (const mime of mimeTypes) {
-          if (!mime || MediaRecorder.isTypeSupported(mime)) {
-            selectedMime = mime;
-            break;
-          }
-        }
-
-        const mediaRecorder = selectedMime
-          ? new MediaRecorder(stream, { mimeType: selectedMime })
-          : new MediaRecorder(stream);
-        mediaRecorderRef.current = mediaRecorder;
-
-        mediaRecorder.ondataavailable = (e) => {
-          if (e.data.size > 0) chunksRef.current.push(e.data);
-        };
-
-        mediaRecorder.onstop = async () => {
-          const audioBlob = new Blob(chunksRef.current, { type: mediaRecorder.mimeType || "audio/webm" });
-          stream.getTracks().forEach((t) => t.stop());
-          await transcribeAudio(audioBlob);
-        };
-
-        mediaRecorder.start();
-        setIsListening(true);
+        setError("iOS mic capture needs Safari 14.3+. Try desktop?");
+        stream.getTracks().forEach((t) => t.stop());
+        return;
       }
+
+      const mimeTypes = ["audio/webm", "audio/mp4", "audio/aac", ""];
+      let selectedMime = "";
+      for (const mime of mimeTypes) {
+        if (!mime || MediaRecorder.isTypeSupported(mime)) {
+          selectedMime = mime;
+          break;
+        }
+      }
+
+      const mediaRecorder = selectedMime
+        ? new MediaRecorder(stream, { mimeType: selectedMime })
+        : new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(chunksRef.current, { type: mediaRecorder.mimeType || "audio/webm" });
+        stream.getTracks().forEach((t) => t.stop());
+        await transcribeAudio(audioBlob);
+      };
+
+      mediaRecorder.start();
+      setIsListening(true);
     } catch (err: any) {
       if (err.name === "NotAllowedError") {
         setError("Microphone access denied.");
-      } else if (err.name === "NotFoundError") {
-        setError("No microphone found.");
       } else {
         setError("Cannot start: " + err.message);
       }
@@ -150,40 +77,36 @@ export function VoiceTranslator() {
   };
 
   const stopListening = () => {
-    if (!isListening) return;
-    setIsListening(false);
-    setIsProcessing(true);
-
-    if (isIOS && audioContextRef.current) {
-      if (processorRef.current) {
-        processorRef.current.disconnect();
-        processorRef.current = null;
-      }
-      const sampleRate = audioContextRef.current.sampleRate;
-      const wavBlob = createWAV(pcmDataRef.current, sampleRate);
-      stopStream();
-      transcribeAudio(wavBlob);
-    } else if (mediaRecorderRef.current) {
+    if (mediaRecorderRef.current && isListening) {
       mediaRecorderRef.current.stop();
+      setIsListening(false);
+      setIsProcessing(true);
     }
   };
 
   const transcribeAudio = async (audioBlob: Blob) => {
     try {
+      console.log("Audio type:", audioBlob.type, "size:", audioBlob.size);
+
       const formData = new FormData();
       formData.append("audio", audioBlob);
 
       const response = await fetch("/api/speech", { method: "POST", body: formData });
       const data = await response.json();
 
-      if (data.transcript) {
+      console.log("Deepgram response:", data);
+
+      if (data.transcript && data.transcript.trim()) {
         processTranslation(data.transcript);
+      } else if (data.error) {
+        setError("Server: " + data.error);
+        setIsProcessing(false);
       } else {
-        setError("Could not understand audio. Try again.");
+        setError("No speech detected. Try again.");
         setIsProcessing(false);
       }
-    } catch {
-      setError("Transcription failed. Check connection.");
+    } catch (err: any) {
+      setError("Transcription failed: " + err.message);
       setIsProcessing(false);
     }
   };
