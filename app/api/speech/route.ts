@@ -16,7 +16,7 @@ export async function POST(req: Request) {
 
     console.log("Audio type:", audio.type, "size:", audio.size, "API key length:", apiKey?.length);
 
-    const response = await fetch("https://api.deepgram.com/v1/listen?language=fil-PH&model=nova-2", {
+    const response = await fetch("https://api.deepgram.com/v1/listen?model=nova-2&tier=enhanced", {
       method: "POST",
       headers: {
         Authorization: `Token ${apiKey}`,
