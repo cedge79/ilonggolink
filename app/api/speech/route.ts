@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     const hf = new HfInference(apiKey);
 
     const result = await hf.automaticSpeechRecognition({
-      model: "openai/whisper-large-v2",
+      model: "Xenova/whisper-large-v3",
       data: new Blob([audioBuffer], { type: "audio/webm" }),
     });
 
