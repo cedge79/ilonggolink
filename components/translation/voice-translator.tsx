@@ -37,35 +37,18 @@ export function VoiceTranslator() {
     }
   };
 
-  const floatTo16BitPCM = (floatData: Float32Array): ArrayBuffer => {
-    const buffer = new ArrayBuffer(floatData.length * 2);
-    const view = new DataView(buffer);
-    for (let i = 0; i < floatData.length; i++) {
-      let s = Math.max(-1, Math.min(1, floatData[i]));
-      view.setInt16(i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true);
-    }
-    return buffer;
-  };
-
-  const createWAV = (pcmData: Float32Array[], sampleRate: number): Blob => {
-    const length = pcmData.reduce((acc, arr) => acc + arr.length, 0);
-    const allPCM = new Float32Array(length);
-    let offset = 0;
-    for (const arr of pcmData) {
-      allPCM.set(arr, offset);
-      offset += arr.length;
-    }
-
-    const pcm16 = floatTo16BitPCM(allPCM);
-    const buffer = new ArrayBuffer(44 + pcm16.byteLength);
+  const encodeWAV = (samples: Float32Array, sampleRate: number): ArrayBuffer => {
+    const buffer = new ArrayBuffer(44 + samples.length * 2);
     const view = new DataView(buffer);
 
     const writeString = (offset: number, str: string) => {
-      for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+      for (let i = 0; i < str.length; i++) {
+        view.setUint8(offset + i, str.charCodeAt(i));
+      }
     };
 
     writeString(0, "RIFF");
-    view.setUint32(4, 36 + pcm16.byteLength, true);
+    view.setUint32(4, 36 + samples.length * 2, true);
     writeString(8, "WAVE");
     writeString(12, "fmt ");
     view.setUint32(16, 16, true);
@@ -76,10 +59,16 @@ export function VoiceTranslator() {
     view.setUint16(32, 2, true);
     view.setUint16(34, 16, true);
     writeString(36, "data");
-    view.setUint32(40, pcm16.byteLength, true);
+    view.setUint32(40, samples.length * 2, true);
 
-    new Uint8Array(buffer, 44).set(new Uint8Array(pcm16));
-    return new Blob([buffer], { type: "audio/wav" });
+    let offset = 44;
+    for (let i = 0; i < samples.length; i++) {
+      const s = Math.max(-1, Math.min(1, samples[i]));
+      view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+      offset += 2;
+    }
+
+    return buffer;
   };
 
   const startListening = async () => {
@@ -160,7 +149,18 @@ export function VoiceTranslator() {
         processorRef.current = null;
       }
       const sampleRate = audioContextRef.current.sampleRate;
-      const wavBlob = createWAV(pcmDataRef.current, sampleRate);
+      
+      const length = pcmDataRef.current.reduce((acc, arr) => acc + arr.length, 0);
+      const allPCM = new Float32Array(length);
+      let offset = 0;
+      for (const arr of pcmDataRef.current) {
+        allPCM.set(arr, offset);
+        offset += arr.length;
+      }
+      
+      const wavBuffer = encodeWAV(allPCM, sampleRate);
+      const wavBlob = new Blob([wavBuffer], { type: "audio/wav" });
+      
       stopStream();
       transcribeAudio(wavBlob);
     } else if (mediaRecorderRef.current) {
