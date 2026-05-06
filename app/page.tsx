@@ -1,5 +1,3 @@
-import { execSync } from "child_process";
-import path from "path";
 import React, { useState } from "react";
 import {
   Type,
@@ -120,7 +118,7 @@ export default function Home() {
     }
   };
 
-  const version = "1.2." + (typeof window === "undefined" ? "11" : "");
+  const version = "1.2.11";
   return (
     <div className="app-container">
       <header className="ios-header">
@@ -132,7 +130,7 @@ export default function Home() {
             <h1 className="font-bold text-lg">IlonggoLink</h1>
           </div>
           <div className="flex items-center gap-1.5 bg-blue-50 px-2.5 py-1 rounded-full">
-            <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wide">v1.2</span>
+            <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wide">v{version}</span>
           </div>
         </div>
       </header>
