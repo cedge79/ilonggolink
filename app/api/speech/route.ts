@@ -33,6 +33,8 @@ export async function POST(req: Request) {
 
     const data = await response.json();
     
+    console.log("Deepgram status:", response.status, "transcript:", data.results?.channels?.[0]?.alternatives?.[0]?.transcript);
+    
     const transcript = data.results?.channels?.[0]?.alternatives?.[0]?.transcript || "";
     
     return new Response(JSON.stringify({ transcript }), { status: 200 });
