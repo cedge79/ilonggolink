@@ -27,12 +27,15 @@ export function VoiceTranslator() {
 
       recognitionRef.current.onerror = (event: any) => {
         setIsListening(false);
+        setIsProcessing(false);
         if (event.error === "not-allowed") {
-          setError("Microphone access denied.");
+          setError("Microphone access denied in Settings.");
+        } else if (event.error === "service-not-allowed") {
+          setError("Speech service blocked. Try: Settings → Safari → Advanced → Experimental Features → Enable Speech Recognition");
         } else if (event.error === "no-speech") {
           setError("No speech detected. Try again.");
         } else {
-          setError("Recognition error: " + event.error);
+          setError("Error: " + event.error);
         }
       };
 
