@@ -1,13 +1,13 @@
-import { HfInference } from "@huggingface/inference";
+import Groq from "groq-sdk";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  const apiKey = process.env.HUGGINGFACE_API_KEY;
-  console.log("Hugging Face API key present:", !!apiKey, "length:", apiKey?.length);
-  
+  const apiKey = process.env.GROQ_API_KEY;
+  console.log("Groq API key present:", !!apiKey, "length:", apiKey?.length);
+
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: "Hugging Face API key not configured" }), { status: 500 });
+    return new Response(JSON.stringify({ error: "Groq API key not configured" }), { status: 500 });
   }
 
   try {
@@ -20,17 +20,17 @@ export async function POST(req: Request) {
 
     console.log("Audio type:", audio.type, "size:", audio.size);
 
-    const audioBuffer = await audio.arrayBuffer();
-    const hf = new HfInference(apiKey);
+    const groq = new Groq({ apiKey });
 
-    const result = await hf.automaticSpeechRecognition({
-      model: "Xenova/whisper-large-v3",
-      data: new Blob([audioBuffer], { type: "audio/webm" }),
+    const transcription = await groq.audio.transcriptions.create({
+      file: new File([audio], "audio.webm", { type: "audio/webm" }),
+      model: "whisper-large-v3",
+      language: "en",
     });
 
-    console.log("Whisper transcript:", result.text);
+    console.log("Whisper transcript:", transcription.text);
 
-    return new Response(JSON.stringify({ transcript: result.text }), { status: 200 });
+    return new Response(JSON.stringify({ transcript: transcription.text }), { status: 200 });
   } catch (error: any) {
     console.error("Speech API error:", error);
     return new Response(JSON.stringify({ error: `Transcription failed: ${error.message}` }), { status: 500 });
