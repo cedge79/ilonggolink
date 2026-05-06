@@ -1,6 +1,6 @@
 {
   "name": "ilonggolink-pwa",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "private": true,
   "description": "Offline Ilonggo-English translator PWA for iPhone",
   "scripts": {

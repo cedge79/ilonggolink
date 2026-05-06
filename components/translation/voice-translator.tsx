@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { Mic, Square, Loader2, Volume2, ArrowDown } from "lucide-react";
 import { translateOffline, getGlossary } from "@/lib/offline-engine";
 
@@ -10,68 +10,96 @@ export function VoiceTranslator() {
   const [result, setResult] = useState<{ transcribed: string; translated: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const recognitionRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
 
-  useEffect(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = "fil-PH";
-
-      recognitionRef.current.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        processTranslation(transcript);
-      };
-
-      recognitionRef.current.onerror = (event: any) => {
-        setIsListening(false);
-        setIsProcessing(false);
-        if (event.error === "not-allowed") {
-          setError("Microphone access denied in Settings.");
-        } else if (event.error === "service-not-allowed") {
-          setError("Speech service blocked. Try: Settings → Safari → Advanced → Experimental Features → Enable Speech Recognition");
-        } else if (event.error === "no-speech") {
-          setError("No speech detected. Try again.");
-        } else {
-          setError("Error: " + event.error);
-        }
-      };
-
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-      };
-    }
-  }, []);
-
-  const startListening = () => {
-    if (!recognitionRef.current) {
-      setError("Speech recognition not supported in this browser.");
-      return;
-    }
+  const startListening = async () => {
     setError(null);
     setResult(null);
-    setIsListening(true);
-    recognitionRef.current.start();
+    chunksRef.current = [];
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+
+      const mimeTypes = ["audio/webm", "audio/mp4", "audio/aac", ""];
+      let selectedMime = "";
+      for (const mime of mimeTypes) {
+        if (!mime || MediaRecorder.isTypeSupported(mime)) {
+          selectedMime = mime;
+          break;
+        }
+      }
+
+      const mediaRecorder = selectedMime
+        ? new MediaRecorder(stream, { mimeType: selectedMime })
+        : new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(chunksRef.current, { type: mediaRecorder.mimeType || "audio/webm" });
+        stream.getTracks().forEach((t) => t.stop());
+        await transcribeAudio(audioBlob);
+      };
+
+      mediaRecorder.start();
+      setIsListening(true);
+    } catch (err: any) {
+      if (err.name === "NotAllowedError") {
+        setError("Microphone access denied in Settings.");
+      } else if (err.name === "NotFoundError") {
+        setError("No microphone found.");
+      } else {
+        setError("Cannot start: " + err.message);
+      }
+    }
   };
 
   const stopListening = () => {
-    if (recognitionRef.current && isListening) {
-      recognitionRef.current.stop();
+    if (mediaRecorderRef.current && isListening) {
+      mediaRecorderRef.current.stop();
       setIsListening(false);
       setIsProcessing(true);
     }
   };
 
-  const processTranslation = (text: string) => {
-    setIsProcessing(true);
-    setTimeout(() => {
-      const glossary = getGlossary();
-      const translated = translateOffline(text, "English", glossary);
-      setResult({ transcribed: text, translated });
+  const transcribeAudio = async (audioBlob: Blob) => {
+    try {
+      console.log("Audio type:", audioBlob.type, "size:", audioBlob.size);
+
+      const formData = new FormData();
+      formData.append("audio", audioBlob);
+
+      const response = await fetch("/api/speech", { method: "POST", body: formData });
+      const data = await response.json();
+
+      console.log("API response:", data);
+
+      if (data.transcript && data.transcript.trim()) {
+        processTranslation(data.transcript);
+      } else if (data.error) {
+        setError("Server: " + data.error);
+        setIsProcessing(false);
+      } else {
+        setError("No speech detected. Try again.");
+        setIsProcessing(false);
+      }
+    } catch (err: any) {
+      setError("Transcription failed: " + err.message);
       setIsProcessing(false);
-    }, 300);
+    }
+  };
+
+  const processTranslation = (text: string) => {
+    const glossary = getGlossary();
+    const translated = translateOffline(text, "English", glossary);
+    setResult({ transcribed: text, translated });
+    setIsProcessing(false);
   };
 
   const speakText = (text: string) => {
