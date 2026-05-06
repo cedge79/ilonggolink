@@ -14,6 +14,9 @@ export function VoiceTranslator() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const pcmDataRef = useRef<Float32Array[]>([]);
 
   useEffect(() => {
     setIsIOS(/iPad|iPhone|iPod/.test(navigator.userAgent));
@@ -24,49 +27,105 @@ export function VoiceTranslator() {
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
+    if (processorRef.current) {
+      processorRef.current.disconnect();
+      processorRef.current = null;
+    }
+    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+  };
+
+  const pcmToWAV = (pcmArray: Float32Array, sampleRate: number): Blob => {
+    const buffer = new ArrayBuffer(44 + pcmArray.length * 2);
+    const view = new DataView(buffer);
+
+    const writeString = (offset: number, str: string) => {
+      for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+    };
+
+    writeString(0, "RIFF");
+    view.setUint32(4, 36 + pcmArray.length * 2, true);
+    writeString(8, "WAVE");
+    writeString(12, "fmt ");
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeString(36, "data");
+    view.setUint32(40, pcmArray.length * 2, true);
+
+    let offset = 44;
+    for (let i = 0; i < pcmArray.length; i++) {
+      const s = Math.max(-1, Math.min(1, pcmArray[i]));
+      view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+      offset += 2;
+    }
+
+    return new Blob([buffer], { type: "audio/wav" });
   };
 
   const startListening = async () => {
     setError(null);
     setResult(null);
     chunksRef.current = [];
+    pcmDataRef.current = [];
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
       if (isIOS) {
-        setError("iOS mic capture needs Safari 14.3+. Try desktop?");
-        stream.getTracks().forEach((t) => t.stop());
-        return;
-      }
+        const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+        const audioContext = new AudioCtx({ sampleRate: 16000 });
+        await audioContext.resume();
+        audioContextRef.current = audioContext;
 
-      const mimeTypes = ["audio/webm", "audio/mp4", "audio/aac", ""];
-      let selectedMime = "";
-      for (const mime of mimeTypes) {
-        if (!mime || MediaRecorder.isTypeSupported(mime)) {
-          selectedMime = mime;
-          break;
+        const source = audioContext.createMediaStreamSource(stream);
+        const processor = audioContext.createScriptProcessor(4096, 1, 1);
+        processorRef.current = processor;
+
+        processor.onaudioprocess = (e: any) => {
+          if (isListening) {
+            pcmDataRef.current.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+          }
+        };
+
+        source.connect(processor);
+        processor.connect(audioContext.destination);
+        setIsListening(true);
+      } else {
+        const mimeTypes = ["audio/webm", "audio/mp4", "audio/aac", ""];
+        let selectedMime = "";
+        for (const mime of mimeTypes) {
+          if (!mime || MediaRecorder.isTypeSupported(mime)) {
+            selectedMime = mime;
+            break;
+          }
         }
+
+        const mediaRecorder = selectedMime
+          ? new MediaRecorder(stream, { mimeType: selectedMime })
+          : new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) chunksRef.current.push(e.data);
+        };
+
+        mediaRecorder.onstop = async () => {
+          const audioBlob = new Blob(chunksRef.current, { type: mediaRecorder.mimeType || "audio/webm" });
+          stream.getTracks().forEach((t) => t.stop());
+          await transcribeAudio(audioBlob);
+        };
+
+        mediaRecorder.start();
+        setIsListening(true);
       }
-
-      const mediaRecorder = selectedMime
-        ? new MediaRecorder(stream, { mimeType: selectedMime })
-        : new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(chunksRef.current, { type: mediaRecorder.mimeType || "audio/webm" });
-        stream.getTracks().forEach((t) => t.stop());
-        await transcribeAudio(audioBlob);
-      };
-
-      mediaRecorder.start();
-      setIsListening(true);
     } catch (err: any) {
       if (err.name === "NotAllowedError") {
         setError("Microphone access denied.");
@@ -77,10 +136,30 @@ export function VoiceTranslator() {
   };
 
   const stopListening = () => {
-    if (mediaRecorderRef.current && isListening) {
+    if (!isListening) return;
+    setIsListening(false);
+    setIsProcessing(true);
+
+    if (isIOS && audioContextRef.current) {
+      if (processorRef.current) {
+        processorRef.current.disconnect();
+        processorRef.current = null;
+      }
+      
+      const sampleRate = audioContextRef.current.sampleRate;
+      const length = pcmDataRef.current.reduce((acc, arr) => acc + arr.length, 0);
+      const allPCM = new Float32Array(length);
+      let offset = 0;
+      for (const arr of pcmDataRef.current) {
+        allPCM.set(arr, offset);
+        offset += arr.length;
+      }
+      
+      const wavBlob = pcmToWAV(allPCM, sampleRate);
+      stopStream();
+      transcribeAudio(wavBlob);
+    } else if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
-      setIsListening(false);
-      setIsProcessing(true);
     }
   };
 
