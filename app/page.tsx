@@ -14,6 +14,7 @@ import { TextTranslator } from "@/components/translation/text-translator";
 import { GlossaryManager } from "@/components/glossary/glossary-manager";
 import { WordCollector } from "@/components/glossary/word-collector";
 import { CorrectionTool } from "@/components/translation/correction-tool";
+import { VoiceTranslator } from "@/components/translation/voice-translator";
 
 type ViewMode = "text" | "voice" | "conversation" | "glossary" | "collector" | "settings";
 
@@ -27,6 +28,7 @@ export default function Home() {
 
   const tabs = [
     { id: "text" as ViewMode, label: "Translate", icon: Type },
+    { id: "voice" as ViewMode, label: "Voice", icon: Mic },
     { id: "glossary" as ViewMode, label: "Phrases", icon: BookMarked },
     { id: "settings" as ViewMode, label: "Settings", icon: Settings },
   ];
@@ -35,6 +37,8 @@ export default function Home() {
     switch (activeView) {
       case "text":
         return <TextTranslator onTranslate={handleTranslationComplete} />;
+      case "voice":
+        return <VoiceTranslator />;
       case "glossary":
         return <GlossaryManager />;
       case "collector":
