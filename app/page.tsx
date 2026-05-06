@@ -111,7 +111,7 @@ export default function Home() {
             </div>
 
             <p className="text-center text-[10px] text-gray-400 uppercase tracking-wider font-bold">
-              600+ words &bull; 150+ phrases &bull; 100% offline
+               600+ words &bull; 150+ phrases &bull; v1.1
             </p>
           </div>
         );
@@ -130,9 +130,8 @@ export default function Home() {
             </div>
             <h1 className="font-bold text-lg">IlonggoLink</h1>
           </div>
-          <div className="flex items-center gap-1.5 bg-green-50 px-2.5 py-1 rounded-full">
-            <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-            <span className="text-[10px] font-bold text-green-700 uppercase tracking-wide">Offline</span>
+          <div className="flex items-center gap-1.5 bg-blue-50 px-2.5 py-1 rounded-full">
+            <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wide">v1.1</span>
           </div>
         </div>
       </header>

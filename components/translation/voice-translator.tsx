@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Mic, Square, Loader2, Volume2, ArrowDown } from "lucide-react";
 import { translateOffline, getGlossary } from "@/lib/offline-engine";
 
@@ -9,54 +8,191 @@ export function VoiceTranslator() {
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<{ transcribed: string; translated: string } | null>(null);
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isIOS, setIsIOS] = useState(false);
 
-  const recognitionRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<BlobPart[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const pcmDataRef = useRef<Float32Array[]>([]);
 
   useEffect(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = "fil-PH";
-
-      recognitionRef.current.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        processTranslation(transcript);
-      };
-
-      recognitionRef.current.onerror = (event: any) => {
-        setIsListening(false);
-        if (event.error === "not-allowed") setHasPermission(false);
-      };
-
-      recognitionRef.current.onend = () => setIsListening(false);
-    }
+    setIsIOS(/iPad|iPhone|iPod/.test(navigator.userAgent));
   }, []);
 
-  const startListening = () => {
-    if (!recognitionRef.current) return;
+  const stopStream = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    if (processorRef.current) {
+      processorRef.current.disconnect();
+      processorRef.current = null;
+    }
+    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+  };
+
+  const floatTo16BitPCM = (floatData: Float32Array): ArrayBuffer => {
+    const buffer = new ArrayBuffer(floatData.length * 2);
+    const view = new DataView(buffer);
+    for (let i = 0; i < floatData.length; i++) {
+      let s = Math.max(-1, Math.min(1, floatData[i]));
+      view.setInt16(i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+    }
+    return buffer;
+  };
+
+  const createWAV = (pcmData: Float32Array[], sampleRate: number): Blob => {
+    const length = pcmData.reduce((acc, arr) => acc + arr.length, 0);
+    const allPCM = new Float32Array(length);
+    let offset = 0;
+    for (const arr of pcmData) {
+      allPCM.set(arr, offset);
+      offset += arr.length;
+    }
+
+    const pcm16 = floatTo16BitPCM(allPCM);
+    const buffer = new ArrayBuffer(44 + pcm16.byteLength);
+    const view = new DataView(buffer);
+
+    const writeString = (offset: number, str: string) => {
+      for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+    };
+
+    writeString(0, "RIFF");
+    view.setUint32(4, 36 + pcm16.byteLength, true);
+    writeString(8, "WAVE");
+    writeString(12, "fmt ");
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeString(36, "data");
+    view.setUint32(40, pcm16.byteLength, true);
+
+    new Uint8Array(buffer, 44).set(new Uint8Array(pcm16));
+    return new Blob([buffer], { type: "audio/wav" });
+  };
+
+  const startListening = async () => {
+    setError(null);
     setResult(null);
-    setIsListening(true);
-    recognitionRef.current.start();
+    chunksRef.current = [];
+    pcmDataRef.current = [];
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+
+      if (isIOS) {
+        const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+        const audioContext = new AudioCtx({ sampleRate: 16000 });
+        await audioContext.resume();
+        audioContextRef.current = audioContext;
+        const source = audioContext.createMediaStreamSource(stream);
+        const processor = audioContext.createScriptProcessor(4096, 1, 1);
+        processorRef.current = processor;
+
+        processor.onaudioprocess = (e: any) => {
+          if (isListening) {
+            pcmDataRef.current.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+          }
+        };
+
+        source.connect(processor);
+        processor.connect(audioContext.destination);
+        setIsListening(true);
+      } else {
+        const mimeTypes = ["audio/webm", "audio/mp4", "audio/aac", ""];
+        let selectedMime = "";
+        for (const mime of mimeTypes) {
+          if (!mime || MediaRecorder.isTypeSupported(mime)) {
+            selectedMime = mime;
+            break;
+          }
+        }
+
+        const mediaRecorder = selectedMime
+          ? new MediaRecorder(stream, { mimeType: selectedMime })
+          : new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) chunksRef.current.push(e.data);
+        };
+
+        mediaRecorder.onstop = async () => {
+          const audioBlob = new Blob(chunksRef.current, { type: mediaRecorder.mimeType || "audio/webm" });
+          stream.getTracks().forEach((t) => t.stop());
+          await transcribeAudio(audioBlob);
+        };
+
+        mediaRecorder.start();
+        setIsListening(true);
+      }
+    } catch (err: any) {
+      if (err.name === "NotAllowedError") {
+        setError("Microphone access denied.");
+      } else if (err.name === "NotFoundError") {
+        setError("No microphone found.");
+      } else {
+        setError("Cannot start: " + err.message);
+      }
+    }
   };
 
   const stopListening = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      setIsListening(false);
+    if (!isListening) return;
+    setIsListening(false);
+    setIsProcessing(true);
+
+    if (isIOS && audioContextRef.current) {
+      if (processorRef.current) {
+        processorRef.current.disconnect();
+        processorRef.current = null;
+      }
+      const sampleRate = audioContextRef.current.sampleRate;
+      const wavBlob = createWAV(pcmDataRef.current, sampleRate);
+      stopStream();
+      transcribeAudio(wavBlob);
+    } else if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+    }
+  };
+
+  const transcribeAudio = async (audioBlob: Blob) => {
+    try {
+      const formData = new FormData();
+      formData.append("audio", audioBlob);
+
+      const response = await fetch("/api/speech", { method: "POST", body: formData });
+      const data = await response.json();
+
+      if (data.transcript) {
+        processTranslation(data.transcript);
+      } else {
+        setError("Could not understand audio. Try again.");
+        setIsProcessing(false);
+      }
+    } catch {
+      setError("Transcription failed. Check connection.");
+      setIsProcessing(false);
     }
   };
 
   const processTranslation = (text: string) => {
-    setIsProcessing(true);
-    setTimeout(() => {
-      const glossary = getGlossary();
-      const translated = translateOffline(text, "English", glossary);
-      setResult({ transcribed: text, translated });
-      setIsProcessing(false);
-    }, 300);
+    const glossary = getGlossary();
+    const translated = translateOffline(text, "English", glossary);
+    setResult({ transcribed: text, translated });
+    setIsProcessing(false);
   };
 
   const speakText = (text: string) => {
@@ -98,10 +234,9 @@ export function VoiceTranslator() {
         </div>
       </div>
 
-      {hasPermission === false && (
+      {error && (
         <div className="p-4 bg-red-900/30 rounded-xl border border-red-800 text-center">
-          <p className="text-sm font-medium text-red-300">Microphone access blocked</p>
-          <p className="text-xs text-red-400 mt-1">Enable in Safari settings</p>
+          <p className="text-sm font-medium text-red-300">{error}</p>
         </div>
       )}
 
