@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     
     if (!response.ok) {
       console.error("Deepgram error:", data);
-      return new Response(JSON.stringify({ error: "Deepgram API error" }), { status: 500 });
+      return new Response(JSON.stringify({ error: `Deepgram: ${data.error || 'Unknown error'}` }), { status: 500 });
     }
     
     const transcript = data.results?.channels?.[0]?.alternatives?.[0]?.transcript || "";
