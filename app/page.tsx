@@ -1,5 +1,5 @@
-"use client";
-
+import { execSync } from "child_process";
+import path from "path";
 import React, { useState } from "react";
 import {
   Type,
@@ -120,6 +120,7 @@ export default function Home() {
     }
   };
 
+  const version = "1.2." + (typeof window === "undefined" ? "11" : "");
   return (
     <div className="app-container">
       <header className="ios-header">
