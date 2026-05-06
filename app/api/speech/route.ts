@@ -14,7 +14,7 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: "No audio provided" }), { status: 400 });
     }
 
-    console.log("Audio type:", audio.type, "size:", audio.size);
+    console.log("Audio type:", audio.type, "size:", audio.size, "API key length:", apiKey?.length);
 
     const response = await fetch("https://api.deepgram.com/v1/listen?language=fil-PH&model=nova-2&tier=enhanced", {
       method: "POST",
