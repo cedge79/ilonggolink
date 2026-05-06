@@ -1,9 +1,9 @@
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  const apiKey = process.env.DEEPGRAM_API_KEY;
+  const apiKey = process.env.GOOGLE_API_KEY;
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: "Deepgram API key not configured" }), { status: 500 });
+    return new Response(JSON.stringify({ error: "Google API key not configured" }), { status: 500 });
   }
 
   try {
@@ -14,31 +14,41 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: "No audio provided" }), { status: 400 });
     }
 
-    console.log("Audio type:", audio.type, "size:", audio.size, "API key length:", apiKey?.length);
+    console.log("Audio type:", audio.type, "size:", audio.size);
 
-    const response = await fetch("https://api.deepgram.com/v1/listen?model=nova-2", {
-      method: "POST",
-      headers: {
-        Authorization: `Token ${apiKey}`,
-        "Content-Type": audio.type || "audio/webm",
-      },
-      body: audio,
-    });
+    const audioBuffer = await audio.arrayBuffer();
+    const base64Audio = Buffer.from(audioBuffer).toString("base64");
+
+    const response = await fetch(
+      `https://speech.googleapis.com/v1/speech:recognize?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          config: {
+            encoding: "LINEAR16",
+            sampleRateHertz: 16000,
+            languageCode: "fil-PH",
+          },
+          audio: { content: base64Audio },
+        }),
+      }
+    );
 
     if (!response.ok) {
       const text = await response.text();
-      console.error("Deepgram error status:", response.status, "body:", text);
-      return new Response(JSON.stringify({ error: `Deepgram: ${response.status}` }), { status: 500 });
+      console.error("Google error status:", response.status, "body:", text);
+      return new Response(JSON.stringify({ error: `Google: ${response.status}` }), { status: 500 });
     }
 
     const data = await response.json();
-    
-    console.log("Deepgram status:", response.status, "transcript:", data.results?.channels?.[0]?.alternatives?.[0]?.transcript);
-    
-    const transcript = data.results?.channels?.[0]?.alternatives?.[0]?.transcript || "";
-    
+    const transcript = data.results?.[0]?.alternatives?.[0]?.transcript || "";
+
+    console.log("Google transcript:", transcript);
+
     return new Response(JSON.stringify({ transcript }), { status: 200 });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Speech API error:", error);
     return new Response(JSON.stringify({ error: "Transcription failed" }), { status: 500 });
   }
 }
