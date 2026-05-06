@@ -2,6 +2,8 @@ export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   const apiKey = process.env.HUGGINGFACE_API_KEY;
+  console.log("Hugging Face API key present:", !!apiKey, "length:", apiKey?.length);
+  
   if (!apiKey) {
     return new Response(JSON.stringify({ error: "Hugging Face API key not configured" }), { status: 500 });
   }
