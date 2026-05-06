@@ -14,7 +14,7 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: "No audio provided" }), { status: 400 });
     }
 
-    const response = await fetch("https://api.deepgram.com/v1/listen?language=fil&model=nova-2", {
+    const response = await fetch("https://api.deepgram.com/v1/listen?language=fil-PH&model=nova-2&punctuate=true&tier=enhanced", {
       method: "POST",
       headers: {
         Authorization: `Token ${apiKey}`,
@@ -24,8 +24,14 @@ export async function POST(req: Request) {
     });
 
     const data = await response.json();
+    
+    if (!response.ok) {
+      console.error("Deepgram error:", data);
+      return new Response(JSON.stringify({ error: "Deepgram API error" }), { status: 500 });
+    }
+    
     const transcript = data.results?.channels?.[0]?.alternatives?.[0]?.transcript || "";
-
+    
     return new Response(JSON.stringify({ transcript }), { status: 200 });
   } catch (error) {
     return new Response(JSON.stringify({ error: "Transcription failed" }), { status: 500 });
