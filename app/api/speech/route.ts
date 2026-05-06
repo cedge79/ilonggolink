@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     const audioBuffer = await audio.arrayBuffer();
 
     const response = await fetch(
-      "https://api-inference.huggingface.co/models/openai/whisper-1",
+      "https://api-inference.huggingface.co/models/openai/whisper-large-v3",
       {
         method: "POST",
         headers: {
